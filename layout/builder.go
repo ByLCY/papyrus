@@ -195,7 +195,7 @@ func handleFlow(cmd *dsl.Command, parent *flowContext, res ResourceSet) error {
 			width = w
 		}
 	} else if a := strings.ToLower(attrs["align"]); a == "center" || a == "right" || a == "end" {
-		if inferred := inferFlowWidth(cmd.Block, res, parent.width, parent.typesetter); inferred > 0 {
+		if inferred := inferFlowWidth(cmd.Block, res, parent.width, parent.typesetter, parent.data); inferred > 0 {
 			width = math.Min(inferred, parent.width)
 		}
 	}
@@ -1696,7 +1696,7 @@ func valueToStringSlice(val *dsl.Value) []string {
 	return nil
 }
 
-func inferFlowWidth(block *dsl.Block, res ResourceSet, maxWidth float64, ts Typesetter) float64 {
+func inferFlowWidth(block *dsl.Block, res ResourceSet, maxWidth float64, ts Typesetter, data any) float64 {
 	if block == nil {
 		return 0
 	}
@@ -1707,11 +1707,11 @@ func inferFlowWidth(block *dsl.Block, res ResourceSet, maxWidth float64, ts Type
 		}
 		switch stmt.Command.Name {
 		case "text":
-			if w := inferTextWidth(stmt.Command, res, maxWidth, ts); w > width {
+			if w := inferTextWidth(stmt.Command, res, maxWidth, ts, data); w > width {
 				width = w
 			}
 		case "flow":
-			if w := inferFlowWidth(stmt.Command.Block, res, maxWidth, ts); w > width {
+			if w := inferFlowWidth(stmt.Command.Block, res, maxWidth, ts, data); w > width {
 				width = w
 			}
 		case "image":
@@ -1733,7 +1733,7 @@ func inferFlowWidth(block *dsl.Block, res ResourceSet, maxWidth float64, ts Type
 	return width
 }
 
-func inferTextWidth(cmd *dsl.Command, res ResourceSet, maxWidth float64, ts Typesetter) float64 {
+func inferTextWidth(cmd *dsl.Command, res ResourceSet, maxWidth float64, ts Typesetter, data any) float64 {
 	if cmd.Block == nil {
 		return 0
 	}
@@ -1743,6 +1743,9 @@ func inferTextWidth(cmd *dsl.Command, res ResourceSet, maxWidth float64, ts Type
 		return parseDimension(v, maxWidth)
 	}
 	content := extractText(cmd.Block)
+	if data != nil {
+		content = binding.Interpolate(content, data)
+	}
 	if content == "" {
 		return 0
 	}
