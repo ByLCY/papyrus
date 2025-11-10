@@ -314,9 +314,59 @@ func (r *Renderer) drawTextBox(ctx *canvas.Context, tb layout.TextBox, fontRes l
 
 		// 根据对齐方式在 anchorX 位置绘制文本
 		ctx.DrawText(anchorX, baseline, textLine)
+
+		// 绘制行内下划线（来自 layout.TextLine.Spans）
+		if len(line.Spans) > 0 {
+			// 计算该行左起始位置（以 mm 计）
+			baseLeftX := anchorX
+			switch textAlign {
+			case canvas.Center:
+				baseLeftX = anchorX - line.Width/2.0
+			case canvas.Right:
+				baseLeftX = anchorX - line.Width
+			default:
+				baseLeftX = anchorX
+			}
+			// 计算并绘制每个 span 的下划线
+			ctx.SetFillColor(colorFromLayout(tb.Color))
+			for _, sp := range line.Spans {
+				if !sp.Underline || sp.Length <= 0 {
+					continue
+				}
+				prefix := runeSubstr(line.Content, 0, sp.Start)
+				seg := runeSubstr(line.Content, sp.Start, sp.Length)
+				px := face.TextWidth(prefix)
+				pw := face.TextWidth(seg)
+				if pw <= 0 {
+					continue
+				}
+				path := canvas.FontUnderline.Decorate(face, pw)
+				// 由于我们将坐标系设置为 CartesianIV（y 轴向下），而字体装饰路径是基于 y 轴向上的坐标计算的，
+				// 因此需要在原点对路径做一次 Y 轴翻转，使下划线位于基线之下而不是与字形重叠。
+				path = path.Transform(canvas.Identity.Scale(1, -1))
+				ctx.DrawPath(baseLeftX+px, baseline, path)
+			}
+		}
+
 		cursorY += lineHeight
 	}
 	return nil
+}
+
+// runeSubstr returns substring by rune start/length.
+func runeSubstr(s string, start int, length int) string {
+	r := []rune(s)
+	if start < 0 {
+		start = 0
+	}
+	if start > len(r) {
+		return ""
+	}
+	end := start + length
+	if length < 0 || end > len(r) {
+		end = len(r)
+	}
+	return string(r[start:end])
 }
 
 func (r *Renderer) drawImages(ctx *canvas.Context, images []layout.ImageBox) error {

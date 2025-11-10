@@ -76,6 +76,8 @@ doc Papyrus v0 {
 
       text Body { "你好，${user.name}!" }
 
+      text Body { "这里有#underline[下划线的文本内容]，以及一个字面井号：\#command 不会被解析。" }
+
       flow {
         text Body {
           "flow 可以嵌套 flow，系统会自动根据父容器宽度排版文本。\n"

@@ -231,12 +231,56 @@ func (s *StringLiteral) Capture(values []string) error {
 	if len(values) == 0 {
 		return fmt.Errorf("string literal capture requires value")
 	}
-	val, err := strconv.Unquote(values[0])
+	raw := values[0]
+	if len(raw) < 2 || raw[0] != '"' || raw[len(raw)-1] != '"' {
+		return fmt.Errorf("invalid string literal: %q", raw)
+	}
+	inner := raw[1 : len(raw)-1]
+	val, err := unescapeDSLString(inner)
 	if err != nil {
 		return err
 	}
 	*s = StringLiteral(val)
 	return nil
+}
+
+// unescapeDSLString processes Papyrus DSL string escapes.
+// Supported: \\ \" \n \r \t and the custom \# for a literal '#'.
+// Unrecognized escapes will resolve to the character itself (eg. \x => x).
+func unescapeDSLString(s string) (string, error) {
+	var b []byte
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c != '\\' {
+			b = append(b, c)
+			continue
+		}
+		if i+1 >= len(s) {
+			// trailing backslash, treat as literal
+			b = append(b, c)
+			break
+		}
+		i++
+		n := s[i]
+		switch n {
+		case 'n':
+			b = append(b, '\n')
+		case 'r':
+			b = append(b, '\r')
+		case 't':
+			b = append(b, '\t')
+		case '"':
+			b = append(b, '"')
+		case '\\':
+			b = append(b, '\\')
+		case '#':
+			b = append(b, '#')
+		default:
+			// unknown escape, keep the escaped char as-is
+			b = append(b, n)
+		}
+	}
+	return string(b), nil
 }
 
 // Parse parses DSL content from an io.Reader.

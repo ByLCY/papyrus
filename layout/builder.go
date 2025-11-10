@@ -1273,6 +1273,8 @@ func extractText(block *dsl.Block) string {
 }
 
 func composeTextBox(style string, attrs map[string]string, content string, x, y, width float64, res ResourceSet, data any, ts Typesetter, debug DebugOptions, wrap string) (TextBox, float64, error) {
+	// 说明：为支持 Typst 风格的行内下划线，如 #underline[文本]，这里在排版前先对内容做一次预处理，
+	// 将指令展开为纯文本，并记录需要下划线的区间，后续在换行后映射到每一行并由渲染器绘制。
 	attrs = mergeStyleAttributes(style, attrs, res.Styles)
 	fontName := attrs["font"]
 	if fontName == "" {
@@ -1285,6 +1287,9 @@ func composeTextBox(style string, attrs map[string]string, content string, x, y,
 	if data != nil {
 		content = binding.Interpolate(content, data)
 	}
+
+	// 预处理行内指令（当前支持 #underline[...] 与 \\# 转义）
+	plainContent, underlineSpans := parseInlineTypst(content)
 
 	fontSize := parseLength(attrs["size"]) // mm
 	if fontSize <= 0 {                     // default 12pt in mm
@@ -1308,7 +1313,7 @@ func composeTextBox(style string, attrs map[string]string, content string, x, y,
 		return TextBox{}, 0, err
 	}
 
-	lines, err := layoutLines(content, width, fontRes, fontSize, lineHeight, ts, wrap)
+	lines, err := layoutLines(plainContent, width, fontRes, fontSize, lineHeight, ts, wrap)
 	if err != nil {
 		return TextBox{}, 0, err
 	}
@@ -1330,8 +1335,35 @@ func composeTextBox(style string, attrs map[string]string, content string, x, y,
 		totalHeight = 0
 	}
 
+	// 将全局下划线区间映射到逐行区间
+	if len(underlineSpans) > 0 {
+		// 计算每行的全局 rune 偏移
+		totalRunes := 0
+		lineStarts := make([]int, len(lines))
+		lineLens := make([]int, len(lines))
+		for i := range lines {
+			lineStarts[i] = totalRunes
+			lineLen := len([]rune(lines[i].Content))
+			lineLens[i] = lineLen
+			totalRunes += lineLen
+		}
+		for _, sp := range underlineSpans {
+			spanStart := sp.Start
+			spanEnd := sp.Start + sp.Length
+			for i := range lines {
+				ls := lineStarts[i]
+				le := ls + lineLens[i]
+				os := maxInt(spanStart, ls)
+				oe := minInt(spanEnd, le)
+				if os < oe {
+					lines[i].Spans = append(lines[i].Spans, TextSpan{Start: os - ls, Length: oe - os, Underline: true})
+				}
+			}
+		}
+	}
+
 	tb := TextBox{
-		Content:    content,
+		Content:    plainContent,
 		X:          x,
 		Y:          y,
 		Width:      width,
@@ -1386,6 +1418,85 @@ func composeTextBox(style string, attrs map[string]string, content string, x, y,
 	}
 	return tb, totalHeight, nil
 }
+
+// parseInlineTypst 解析简化的 Typst 风格行内指令，目前仅支持 #underline[...] 与 \\# 转义。
+// 返回展开后的纯文本，以及针对纯文本的下划线区间（按 rune 计数）。
+func parseInlineTypst(input string) (string, []TextSpan) {
+	var spans []TextSpan
+	var out strings.Builder
+	runes := []rune(input)
+	i := 0
+	for i < len(runes) {
+		r := runes[i]
+		// 处理转义：\# -> '#'
+		if r == '\\' {
+			if i+1 < len(runes) && runes[i+1] == '#' {
+				out.WriteRune('#')
+				i += 2
+				continue
+			}
+			// 其他转义原样输出两个字符
+			out.WriteRune(r)
+			i++
+			continue
+		}
+		// 处理 #underline[
+		if r == '#' {
+			// 检查是否为 underline 指令
+			const kw = "underline["
+			if i+len(kw) <= len(runes) && string(runes[i+1:i+1+len(kw)]) == kw {
+				// 定位匹配的 ]，支持嵌套的 [...]
+				j := i + 1 + len(kw)
+				depth := 1
+				for j < len(runes) {
+					if runes[j] == '\\' { // 跳过转义的下一个符号
+						j += 2
+						continue
+					}
+					if runes[j] == '[' {
+						depth++
+					} else if runes[j] == ']' {
+						depth--
+						if depth == 0 {
+							break
+						}
+					}
+					j++
+				}
+				if j >= len(runes) {
+					// 未闭合，按普通文本输出 '#'
+					out.WriteRune('#')
+					i++
+					continue
+				}
+				inner := string(runes[i+1+len(kw) : j])
+				innerPlain, innerSpans := parseInlineTypst(inner)
+				start := len([]rune(out.String()))
+				out.WriteString(innerPlain)
+				length := len([]rune(innerPlain))
+				if length > 0 {
+					spans = append(spans, TextSpan{Start: start, Length: length, Underline: true})
+					// 调整并合入内部区间
+					for _, isp := range innerSpans {
+						spans = append(spans, TextSpan{Start: start + isp.Start, Length: isp.Length, Underline: isp.Underline})
+					}
+				}
+				i = j + 1
+				continue
+			}
+			// 非 underline 指令，按普通字符输出 '#'
+			out.WriteRune('#')
+			i++
+			continue
+		}
+		out.WriteRune(r)
+		i++
+	}
+	return out.String(), spans
+}
+
+func maxInt(a, b int) int { if a > b { return a }; return b }
+func minInt(a, b int) int { if a < b { return a }; return a }
 
 func resolveFontResource(name string, res ResourceSet) (FontResource, error) {
 	if font, ok := res.Fonts[name]; ok {

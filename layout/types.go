@@ -98,11 +98,19 @@ type TextBox struct {
 }
 
 // TextLine 表示排版后的一行文本内容及其宽高。
+type TextSpan struct {
+	Start     int   `json:"start"`              // 起始位置（以 rune 计数）
+	Length    int   `json:"length"`             // 跨度长度（以 rune 计数）
+	Underline bool  `json:"underline,omitempty"` // 是否绘制下划线
+}
+
+// TextLine 表示排版后的一行文本内容及其宽高。
 type TextLine struct {
-	Content   string  `json:"content"`
-	Width     float64 `json:"width"`
-	Height    float64 `json:"height"`
-	GapBefore float64 `json:"gapBefore,omitempty"`
+	Content   string    `json:"content"`
+	Width     float64   `json:"width"`
+	Height    float64   `json:"height"`
+	GapBefore float64   `json:"gapBefore,omitempty"`
+	Spans     []TextSpan `json:"spans,omitempty"`
 }
 
 // TextBoxDebug holds optional debug info displayed only when enabled by BuildOptions.
