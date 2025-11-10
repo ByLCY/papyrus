@@ -1,0 +1,131 @@
+doc Papyrus v0 {
+  meta {
+    title: "Papyrus Demo"
+    author: "Papyrus Bot"
+    keywords: ["finance", "q1", "internal"]
+  }
+
+  resources {
+
+    font TitleFace {
+      src: "assets/fonts/Noto_Sans_SC/static/NotoSansSC-Bold.ttf"
+      fallback: "embed:Inter/static/Inter-Bold.ttf"
+    }
+
+    font BodyFace {
+      src: "assets/fonts/Noto_Sans_SC/static/NotoSansSC-Regular.ttf"
+      fallback: "embed:Inter/static/Inter-Regular.ttf"
+    }
+
+    font BodyBoldFace {
+      src: "assets/fonts/Noto_Sans_SC/static/NotoSansSC-SemiBold.ttf"
+      fallback: "embed:Inter/static/Inter-SemiBold.ttf"
+    }
+
+    color Accent = #2E86AB
+
+    image Hero {
+      src: "assets/img/logo.png"
+      width: 40mm
+      height: 15mm
+    }
+
+    style Body {
+      font: BodyFace
+      size: 12pt
+      line-height: 1.7x
+      color: #333
+    }
+
+    style Title extends Body {
+      font: TitleFace
+      size: 22pt
+      color: Accent
+    }
+
+    style BodyMuted extends Body {
+      size: 11pt
+      color: #777
+    }
+
+    style BodyBold extends Body {
+      font: BodyBoldFace
+      size: 12pt
+      color: Accent
+    }
+  }
+
+  page A4 portrait margin 18mm {
+    header height 22mm {
+      image Hero width 30mm height 12mm align right
+      text BodyMuted align center { "演示文档（左对齐）" }
+      // 页眉底部分隔线（简化形态，页面坐标）
+      line x 18mm y 21.5mm length 174mm color #000 width 0.2mm
+    }
+    footer height 16mm {
+      text BodyMuted { "第 1 页" }
+    }
+
+    // 基本图形示例（作为背景绘制）
+    line x1 20mm y1 20mm x2 190mm y2 20mm color #000 width 0.3mm
+    rect x 20mm y 30mm width 60mm height 30mm stroke #000 stroke-width 0.2mm
+    circle cx 120mm cy 45mm r 12mm stroke #00f stroke-width 0.2mm fill #E6F0FF
+
+    flow {
+      text Title { "Papyrus 多段落示例" }
+
+      text Body { "你好，${user.name}!" }
+
+      flow {
+        text Body {
+          "flow 可以嵌套 flow，系统会自动根据父容器宽度排版文本。\n"
+          "下方演示 absolute 区域叠加图片，以及简单表格。"
+        }
+      }
+
+      absolute x 120mm y 20mm width 60mm {
+        image Hero width 40mm height 15mm
+        text BodyMuted { "absolute 不占据主文档高度" }
+      }
+
+      table columns 3 width 100% {
+        header {
+          cell BodyBold { "项目" }
+          cell BodyBold { "数量" }
+          cell BodyBold { "金额" }
+        }
+        row {
+          cell Body { "设计稿" }
+          cell Body { "12" }
+          cell Body { "¥ 8,000" }
+        }
+        row {
+          cell Body { "实现与联调" }
+          cell Body { "24" }
+          cell Body { "¥ 16,000" }
+        }
+        row {
+          cell Body { "验收与交付" }
+          cell Body { "5" }
+          cell Body { "¥ 3,000" }
+        }
+      }
+
+      flow align center {
+        text BodyBold { "Flow align center" }
+      }
+
+      flow align right {
+        text BodyBold { "Flow align right" }
+      }
+
+      flow {
+        text Body { "longlonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglonglong" }
+      }
+
+      flow {
+        text Body { "aaaaaa\n\n\n\n\nbbbbb\n\n\n\n\n\nccccc\n\n\n\n\ndddddd" }
+      }
+    }
+  }
+}
