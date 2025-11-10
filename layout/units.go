@@ -103,7 +103,7 @@ func ParseRawLengthStr(value string) Length {
 	lower := strings.ToLower(v)
 	unit := UnitNone
 	num := lower
-	for _, suf := range []struct{
+	for _, suf := range []struct {
 		s string
 		u Unit
 	}{{"mm", UnitMM}, {"cm", UnitCM}, {"in", UnitIN}, {"pt", UnitPT}} {

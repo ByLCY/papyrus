@@ -160,7 +160,7 @@ func (r *Renderer) LayoutLines(content string, width float64, font layout.FontRe
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 在贪心换行中，所有宽度比较与累计均使用 mm
 	if wrap == "" {
 		wrap = "anywhere"
@@ -194,9 +194,15 @@ func (r *Renderer) LayoutLines(content string, width float64, font layout.FontRe
 
 func (r *Renderer) drawPage(ctx *canvas.Context, page layout.Page, resources layout.ResourceSet) error {
 	// 先绘制页眉（先形状作为背景，再文本/图片）
-	if err := r.drawLines(ctx, page.Header.Lines); err != nil { return err }
-	if err := r.drawRects(ctx, page.Header.Rects); err != nil { return err }
-	if err := r.drawCircles(ctx, page.Header.Circles); err != nil { return err }
+	if err := r.drawLines(ctx, page.Header.Lines); err != nil {
+		return err
+	}
+	if err := r.drawRects(ctx, page.Header.Rects); err != nil {
+		return err
+	}
+	if err := r.drawCircles(ctx, page.Header.Circles); err != nil {
+		return err
+	}
 	for _, tb := range page.Header.Texts {
 		fontRes := resolveFontResource(tb.Font, resources.Fonts)
 		if err := r.drawTextBox(ctx, tb, fontRes); err != nil {
@@ -208,9 +214,15 @@ func (r *Renderer) drawPage(ctx *canvas.Context, page layout.Page, resources lay
 	}
 
 	// 背景形状（线、矩形、圆）在主体内容之前绘制
-	if err := r.drawLines(ctx, page.Lines); err != nil { return err }
-	if err := r.drawRects(ctx, page.Rects); err != nil { return err }
-	if err := r.drawCircles(ctx, page.Circles); err != nil { return err }
+	if err := r.drawLines(ctx, page.Lines); err != nil {
+		return err
+	}
+	if err := r.drawRects(ctx, page.Rects); err != nil {
+		return err
+	}
+	if err := r.drawCircles(ctx, page.Circles); err != nil {
+		return err
+	}
 
 	// 绘制主体内容
 	for _, textBox := range page.Texts {
@@ -227,9 +239,15 @@ func (r *Renderer) drawPage(ctx *canvas.Context, page layout.Page, resources lay
 	}
 
 	// 最后绘制页脚（先形状作为背景，再文本与图片）
-	if err := r.drawLines(ctx, page.Footer.Lines); err != nil { return err }
-	if err := r.drawRects(ctx, page.Footer.Rects); err != nil { return err }
-	if err := r.drawCircles(ctx, page.Footer.Circles); err != nil { return err }
+	if err := r.drawLines(ctx, page.Footer.Lines); err != nil {
+		return err
+	}
+	if err := r.drawRects(ctx, page.Footer.Rects); err != nil {
+		return err
+	}
+	if err := r.drawCircles(ctx, page.Footer.Circles); err != nil {
+		return err
+	}
 	for _, tb := range page.Footer.Texts {
 		fontRes := resolveFontResource(tb.Font, resources.Fonts)
 		if err := r.drawTextBox(ctx, tb, fontRes); err != nil {
@@ -383,7 +401,7 @@ func (r *Renderer) drawTables(ctx *canvas.Context, tables []layout.TableBox, fon
 				ctx.SetStrokeColor(colorFromLayout(table.BorderColor))
 				ctx.SetStrokeWidth(tableBorderWidth)
 				ctx.DrawPath(x, row.Y, canvas.Rectangle(colWidth, row.Height))
-				
+
 				fontRes := resolveFontResource(cell.Text.Font, fonts)
 				textBox := cell.Text
 				textBox.X += tableBorderWidth

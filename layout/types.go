@@ -183,7 +183,7 @@ type Rect struct {
 	Width       float64 `json:"width"`
 	Height      float64 `json:"height"`
 	StrokeColor Color   `json:"strokeColor"`
-	StrokeWidth float64 `json:"strokeWidth"`  // mm
+	StrokeWidth float64 `json:"strokeWidth"`         // mm
 	FillColor   *Color  `json:"fillColor,omitempty"` // 为空表示不填充
 }
 

@@ -139,7 +139,7 @@ func processBlock(block *dsl.Block, ctx *flowContext, res ResourceSet) error {
 			if err := handleTable(cmd, ctx, res); err != nil {
 				return err
 			}
- 	default:
+		default:
 			// 形状命令（page-level 背景图形，坐标为页面坐标，允许在任意层级声明）
 			name := strings.ToLower(cmd.Name)
 			if name == "line" || name == "rect" || name == "circle" {
@@ -791,11 +791,17 @@ func buildHeaderFooter(cmd *dsl.Command, pageW, pageH float64, margin Margin, re
 			name := strings.ToLower(st.Command.Name)
 			switch name {
 			case "line":
-				if ln, ok := parseLineShape(a, res); ok { lines = append(lines, ln) }
+				if ln, ok := parseLineShape(a, res); ok {
+					lines = append(lines, ln)
+				}
 			case "rect":
-				if rc, ok := parseRectShape(a, res); ok { rects = append(rects, rc) }
+				if rc, ok := parseRectShape(a, res); ok {
+					rects = append(rects, rc)
+				}
 			case "circle":
-				if c, ok := parseCircleShape(a, res); ok { circles = append(circles, c) }
+				if c, ok := parseCircleShape(a, res); ok {
+					circles = append(circles, c)
+				}
 			}
 			// 形状不改变 header 内 content cursor
 		}
@@ -834,13 +840,13 @@ func buildHeaderFooter(cmd *dsl.Command, pageW, pageH float64, margin Margin, re
 		images[i].Y += baseY
 	}
 
- hf.Height = areaHeight
- hf.Texts = texts
- hf.Images = images
- hf.Lines = lines
- hf.Rects = rects
- hf.Circles = circles
- return hf, nil
+	hf.Height = areaHeight
+	hf.Texts = texts
+	hf.Images = images
+	hf.Lines = lines
+	hf.Rects = rects
+	hf.Circles = circles
+	return hf, nil
 }
 
 func (ctx *flowContext) ensureSpace(height float64) {
@@ -1488,7 +1494,8 @@ func parseColor(value string) (Color, error) {
 // --- Shapes parsing helpers ---
 
 // parseLineShape supports both full form (x1/y1/x2/y2) and simplified form:
-//   line x <len> y <len> length <len> [dir h|v] [color <..>] [width <len>]
+//
+//	line x <len> y <len> length <len> [dir h|v] [color <..>] [width <len>]
 func parseLineShape(attrs map[string]string, res ResourceSet) (Line, bool) {
 	var ln Line
 	// Prefer full form when present
@@ -1498,13 +1505,17 @@ func parseLineShape(attrs map[string]string, res ResourceSet) (Line, bool) {
 	y2 := parseLength(attrs["y2"]) // mm
 	if x1 != 0 || y1 != 0 || x2 != 0 || y2 != 0 {
 		ln.X1, ln.Y1, ln.X2, ln.Y2 = x1, y1, x2, y2
-		if v := attrs["color"]; v != "" { ln.Color = resolveColor(v, res) } else { ln.Color = Color{0,0,0} }
+		if v := attrs["color"]; v != "" {
+			ln.Color = resolveColor(v, res)
+		} else {
+			ln.Color = Color{0, 0, 0}
+		}
 		ln.Width = parseLength(attrs["width"]) // may be 0
 		return ln, true
 	}
 	// Simplified form
-	x := parseLength(attrs["x"]) // mm
-	y := parseLength(attrs["y"]) // mm
+	x := parseLength(attrs["x"])           // mm
+	y := parseLength(attrs["y"])           // mm
 	length := parseLength(attrs["length"]) // mm
 	if (x != 0 || y != 0) && length > 0 {
 		d := strings.ToLower(strings.TrimSpace(attrs["dir"]))
@@ -1518,7 +1529,11 @@ func parseLineShape(attrs map[string]string, res ResourceSet) (Line, bool) {
 			// unknown dir
 			return Line{}, false
 		}
-		if v := attrs["color"]; v != "" { ln.Color = resolveColor(v, res) } else { ln.Color = Color{0,0,0} }
+		if v := attrs["color"]; v != "" {
+			ln.Color = resolveColor(v, res)
+		} else {
+			ln.Color = Color{0, 0, 0}
+		}
 		ln.Width = parseLength(attrs["width"]) // may be 0
 		return ln, true
 	}
@@ -1527,13 +1542,19 @@ func parseLineShape(attrs map[string]string, res ResourceSet) (Line, bool) {
 
 func parseRectShape(attrs map[string]string, res ResourceSet) (Rect, bool) {
 	var rc Rect
-	rc.X = parseLength(attrs["x"]) // mm
-	rc.Y = parseLength(attrs["y"]) // mm
-	rc.Width = parseLength(attrs["width"]) // mm
+	rc.X = parseLength(attrs["x"])           // mm
+	rc.Y = parseLength(attrs["y"])           // mm
+	rc.Width = parseLength(attrs["width"])   // mm
 	rc.Height = parseLength(attrs["height"]) // mm
-	if rc.Width <= 0 || rc.Height <= 0 { return Rect{}, false }
-	if v := attrs["stroke"]; v != "" { rc.StrokeColor = resolveColor(v, res) }
-	if v := attrs["stroke-width"]; v != "" { rc.StrokeWidth = parseLength(v) }
+	if rc.Width <= 0 || rc.Height <= 0 {
+		return Rect{}, false
+	}
+	if v := attrs["stroke"]; v != "" {
+		rc.StrokeColor = resolveColor(v, res)
+	}
+	if v := attrs["stroke-width"]; v != "" {
+		rc.StrokeWidth = parseLength(v)
+	}
 	if v := attrs["fill"]; v != "" {
 		c := resolveColor(v, res)
 		rc.FillColor = &c
@@ -1545,10 +1566,16 @@ func parseCircleShape(attrs map[string]string, res ResourceSet) (Circle, bool) {
 	var c Circle
 	c.CX = parseLength(attrs["cx"]) // mm
 	c.CY = parseLength(attrs["cy"]) // mm
-	c.R = parseLength(attrs["r"]) // mm
-	if c.R <= 0 { return Circle{}, false }
-	if v := attrs["stroke"]; v != "" { c.StrokeColor = resolveColor(v, res) }
-	if v := attrs["stroke-width"]; v != "" { c.StrokeWidth = parseLength(v) }
+	c.R = parseLength(attrs["r"])   // mm
+	if c.R <= 0 {
+		return Circle{}, false
+	}
+	if v := attrs["stroke"]; v != "" {
+		c.StrokeColor = resolveColor(v, res)
+	}
+	if v := attrs["stroke-width"]; v != "" {
+		c.StrokeWidth = parseLength(v)
+	}
 	if v := attrs["fill"]; v != "" {
 		col := resolveColor(v, res)
 		c.FillColor = &col

@@ -57,7 +57,7 @@ func run(inputPath, outputPath, debugPath string, debugRawUnits bool, data any, 
 		return fmt.Errorf("renderer 未实现排版接口")
 	}
 
- result, err := layout.Build(doc, data, layout.BuildOptions{
+	result, err := layout.Build(doc, data, layout.BuildOptions{
 		Typesetter: ts,
 		Debug:      layout.DebugOptions{RawUnits: debugRawUnits},
 	})
